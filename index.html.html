@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Tim Stevens — Live</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: #000;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow: hidden;
+  }
+
+  .wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-width: 480px;
+    margin: 0 auto;
+    background: #000;
+  }
+
+  .video-area {
+    flex: 1;
+    background: #111827;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .camera-icon {
+    font-size: 64px;
+    opacity: 0.15;
+  }
+
+  .top-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+  }
+
+  .live-badge {
+    background: #E41E3F;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+    padding: 5px 12px;
+    border-radius: 5px;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+
+  .live-badge.visible { opacity: 1; }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border-radius: 50%;
+    animation: blink 1.2s infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  .viewer-count {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.5s;
+    background: rgba(0,0,0,0.4);
+    padding: 5px 10px;
+    border-radius: 20px;
+  }
+
+  .viewer-count.visible { opacity: 1; }
+
+  .streamer-info {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 60px 16px 18px;
+    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+  }
+
+  .avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #1877F2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 800;
+    font-size: 16px;
+    flex-shrink: 0;
+    border: 2.5px solid #E41E3F;
+  }
+
+  .streamer-name {
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+  }
+
+  .streamer-sub {
+    color: rgba(255,255,255,0.6);
+    font-size: 12px;
+    margin-top: 3px;
+  }
+
+  .reactions-bar {
+    position: absolute;
+    bottom: 80px;
+    right: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    pointer-events: none;
+  }
+
+  .floating-reaction {
+    font-size: 28px;
+    animation: floatUp 3s ease-out forwards;
+    opacity: 0;
+  }
+
+  @keyframes floatUp {
+    0%   { opacity: 0; transform: translateY(0) scale(0.5); }
+    15%  { opacity: 1; transform: translateY(-10px) scale(1.1); }
+    70%  { opacity: 0.9; transform: translateY(-70px) scale(1); }
+    100% { opacity: 0; transform: translateY(-110px) scale(0.8); }
+  }
+
+  .comments-panel {
+    background: #18191A;
+    padding: 10px 14px;
+    height: 200px;
+    overflow: hidden;
+  }
+
+  .comment {
+    display: flex;
+    gap: 9px;
+    margin-bottom: 10px;
+    animation: slideIn 0.25s ease-out;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .comment-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .comment-name {
+    color: #1877F2;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .comment-text {
+    color: #E4E6EA;
+    font-size: 13px;
+    line-height: 1.45;
+    margin-top: 1px;
+  }
+
+  .bottom-bar {
+    background: #242526;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 0.5px solid #3A3B3C;
+    flex-shrink: 0;
+  }
+
+  .faux-btn {
+    color: #B0B3B8;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .share-count {
+    color: #B0B3B8;
+    font-size: 12px;
+  }
+
+  .go-live-btn {
+    background: #E41E3F;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 22px;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s;
+  }
+
+  .go-live-btn:active { transform: scale(0.96); }
+
+  .go-live-btn.live {
+    background: #3A3B3C;
+    color: #888;
+    cursor: default;
+  }
+
+  .rec-dot {
+    width: 9px;
+    height: 9px;
+    background: #fff;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .go-live-btn.live .rec-dot {
+    background: #E41E3F;
+    animation: blink 1.2s infinite;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <div class="video-area">
+    <div class="camera-icon">📷</div>
+
+    <div class="top-bar">
+      <div class="live-badge" id="liveBadge">
+        <div class="live-dot"></div>
+        LIVE
+      </div>
+      <div class="viewer-count" id="viewerCount">
+        👁 <span id="viewerNum">0</span>
+      </div>
+    </div>
+
+    <div class="reactions-bar" id="reactionsBar"></div>
+
+    <div class="streamer-info">
+      <div class="avatar">TS</div>
+      <div>
+        <div class="streamer-name">Tim Stevens</div>
+        <div class="streamer-sub">Rite Group Conference 2026 · Hamilton, NZ</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="comments-panel" id="commentsPanel"></div>
+
+  <div class="bottom-bar">
+    <div class="faux-btn">👍 Like</div>
+    <div class="faux-btn">💬 Comment</div>
+    <div class="share-count" id="shareCount">Shares: 0</div>
+    <button class="go-live-btn" id="liveBtn" onclick="startLive()">
+      <div class="rec-dot"></div>
+      Go Live
+    </button>
+  </div>
+
+</div>
+
+<script>
+const earlyComments = [
+  { name: "Sarah M.",  text: "Who is this? 👀",                              color: "#E41E3F" },
+  { name: "Dave K.",   text: "Where is this??",                               color: "#1877F2" },
+  { name: "Jess T.",   text: "Just jumped on — what's happening here 😂",    color: "#2ECC71" },
+  { name: "Mike R.",   text: "Ooh a live! Following for more 👏",             color: "#E67E22" },
+  { name: "Aroha W.",  text: "Wait what is this lol",                         color: "#9B59B6" },
+  { name: "Craig B.",  text: "Is this actually live rn??",                    color: "#E41E3F" },
+  { name: "Tina F.",   text: "Just jumped on, what did I miss?",              color: "#1877F2" },
+  { name: "Jordan L.", text: "Aww they look great 😍",                        color: "#2ECC71" },
+  { name: "Sam H.",    text: "Tim always with the content 🔥",                color: "#E67E22" },
+  { name: "Ngaio P.",  text: "They're so cute omg 😊",                        color: "#9B59B6" },
+  { name: "Ben W.",    text: "Tuning in from Auckland 🙌",                    color: "#E41E3F" },
+  { name: "Mere T.",   text: "Who's the guest Tim?? 👀",                      color: "#1877F2" },
+];
+
+const lateComments = [
+  { name: "Brent A.",  text: "Um... are they okay? 😂",                       color: "#E41E3F" },
+  { name: "Emma C.",   text: "Why do they look so stressed lol",              color: "#1877F2" },
+  { name: "Wayne D.",  text: "Just say it naturally!! You got this!!",        color: "#2ECC71" },
+  { name: "Lisa N.",   text: "This is giving ME anxiety just watching 😅",    color: "#E67E22" },
+  { name: "Tom B.",    text: "10k people watching... no pressure 😂",         color: "#9B59B6" },
+  { name: "Fiona R.",  text: "They seemed so relaxed before the camera 😂",   color: "#E41E3F" },
+  { name: "Hemi W.",   text: "Professional version loading... 💀",            color: "#1877F2" },
+  { name: "Carla S.",  text: "Just be yourself!! We can tell!!",              color: "#2ECC71" },
+  { name: "Phil M.",   text: "Why do we all do this on camera omg",           color: "#E67E22" },
+  { name: "Rachel T.", text: "I feel SO seen rn 😭",                          color: "#9B59B6" },
+  { name: "Mere W.",   text: "Someone clip this please 😂",                   color: "#E41E3F" },
+  { name: "James O.",  text: "Relatable content 📸🔥",                        color: "#1877F2" },
+  { name: "Nic P.",    text: "Camera does something to people lol",           color: "#2ECC71" },
+  { name: "Dana K.",   text: "The vibe shift is real 😂",                     color: "#E67E22" },
+];
+
+const reactions = ["❤️","😂","😮","👏","🔥","😍","💯","🙌"];
+
+let isLive = false;
+let shares = 0;
+let commentIndex = 0;
+let elapsed = 0;
+let phase = 'early';
+
+function startLive() {
+  if (isLive) return;
+  isLive = true;
+
+  const btn = document.getElementById('liveBtn');
+  btn.classList.add('live');
+  btn.innerHTML = '<div class="rec-dot"></div> Live now';
+
+  document.getElementById('liveBadge').classList.add('visible');
+  document.getElementById('viewerCount').classList.add('visible');
+
+  let current = 0;
+  const ramp = setInterval(() => {
+    current = Math.min(current + Math.floor(Math.random() * 500) + 150, 10000);
+    document.getElementById('viewerNum').textContent = current.toLocaleString();
+    if (current >= 10000) { clearInterval(ramp); fluctuate(10000); }
+  }, 70);
+
+  setInterval(addComment, 1300);
+  setInterval(addReaction, 900);
+  setInterval(() => {
+    shares += Math.floor(Math.random() * 4) + 1;
+    document.getElementById('shareCount').textContent = 'Shares: ' + shares.toLocaleString();
+  }, 2000);
+  setInterval(() => {
+    elapsed++;
+    if (elapsed > 10) phase = 'late';
+  }, 1000);
+}
+
+function fluctuate(base) {
+  setInterval(() => {
+    base = Math.max(9500, Math.min(10800, base + Math.floor(Math.random() * 300) - 120));
+    document.getElementById('viewerNum').textContent = base.toLocaleString();
+  }, 1800);
+}
+
+function addComment() {
+  const pool = phase === 'early' ? earlyComments : lateComments;
+  const c = pool[commentIndex % pool.length];
+  commentIndex++;
+
+  const panel = document.getElementById('commentsPanel');
+  const div = document.createElement('div');
+  div.className = 'comment';
+  div.innerHTML = `
+    <div class="comment-avatar" style="background:${c.color}">${c.name.split(' ').map(w=>w[0]).join('')}</div>
+    <div>
+      <div class="comment-name">${c.name}</div>
+      <div class="comment-text">${c.text}</div>
+    </div>
+  `;
+  panel.appendChild(div);
+  while (panel.children.length > 6) panel.removeChild(panel.firstChild);
+}
+
+function addReaction() {
+  const bar = document.getElementById('reactionsBar');
+  const span = document.createElement('span');
+  span.className = 'floating-reaction';
+  span.textContent = reactions[Math.floor(Math.random() * reactions.length)];
+  bar.appendChild(span);
+  setTimeout(() => span.remove(), 3100);
+}
+</script>
+</body>
+</html>
